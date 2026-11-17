@@ -1082,8 +1082,9 @@ function parseNieLabel(raw){
   const kk=km.match(/\(\s*([^)]*?)\s*\)/);
   o.ib=kk?kk[1].trim():'';
   o.nb=g(/BPOM\s*RI\s*M[DL]\s*(\d{9,15})/i);
-  const pn=g(/Nama\s*Produsen\s*:\s*(.+?)\s+(?:b\.\s*)?Alamat\s*Produsen/i);
-  const pa=g(/Alamat\s*Produsen\s*:\s*(.+?)\s+(?:c\.\s*)?Nama\s*Importir/i);
+  const fx=v=>String(v||'').replace(/\s*,(\s*,)+/g,',').replace(/\s+,/g,',').replace(/,(?=[^\s\d])/g,', ').replace(/\s{2,}/g,' ').trim();
+  const pn=fx(g(/Nama\s*Produsen\s*:\s*(.+?)\s+(?:b\.\s*)?Alamat\s*Produsen/i));
+  const pa=fx(g(/Alamat\s*Produsen\s*:\s*(.+?)\s+(?:c\.\s*)?Nama\s*Importir/i));
   o.dp=[pn,pa].filter(Boolean).join('\n');
   o.di=g(/Nama\s*Importir\s*\/?\s*Distributor\s*:\s*(.+?)\s+(?:d\.\s*)?Alamat\s*Importir/i);
   return o;
