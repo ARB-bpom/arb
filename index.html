@@ -499,43 +499,16 @@ const synOk=()=>setSyn(getDirty().length?'Menyimpan…':'\u2713 Tersimpan di clo
 function load(){const raw=localStorage.getItem(KEY);if(raw===null)setDirty('items',false);try{items=JSON.parse(raw||'[]')}catch(e){items=[]}}
 function save(){if(typeof revMode!=='undefined'&&revMode&&revId){const r=items.find(i=>i.id===revId);if(r&&r.rev)r.rev.mod=true}let ok=true;try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){ok=false;try{localStorage.removeItem(KEY)}catch(_){}}VER.items++;setDirty('items',ok);pushLater('items')}
 function pushLater(k){if(!cloudReady)return;setSyn('Menyimpan…');clearTimeout(TM[k]);TM[k]=setTimeout(()=>push(k),1200)}
-const CVK='bpom_cv_v1';let CV={};try{CV=JSON.parse(localStorage.getItem(CVK)||'{}')||{}}catch(e){CV={}}
-function cvSet(k,v){CV[k]=v;try{localStorage.setItem(CVK,JSON.stringify(CV))}catch(e){}}
-const tsn=v=>{const n=Date.parse(v||'');return isFinite(n)?n:0};
-function dlJson(nm,data){try{const b=new Blob([JSON.stringify(data)],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=nm+'_'+tglNow()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}catch(e){}}
-async function guard(k){
-  try{
-    const r=await sb.from('app_state').select('key,updated_at');
-    if(r.error)return true;
-    const row=(r.data||[]).find(x=>x.key===k);
-    if(!row)return true;
-    const ck=suid+':'+k;
-    if(tsn(row.updated_at)===tsn(CV[ck]))return true;
-    if(document.visibilityState==='hidden'){setSyn('Data di cloud sudah diubah dari perangkat lain. Buka lagi tab ini untuk memilih.',true);return false}
-    const lbl=k==='items'?'data barang':'logo';
-    if(confirm('PERHATIAN: '+lbl+' di cloud sudah diubah dari perangkat/tab lain setelah halaman ini dibuka.\n\nOK = TIMPA cloud dengan data di perangkat ini (perubahan dari perangkat lain hilang; salinan cadangannya diunduh dulu).\nBatal = PAKAI data cloud (perubahan di perangkat ini yang belum tersimpan hilang; salinan cadangannya diunduh dulu).')){
-      try{const f=await sb.from('app_state').select('key,value,updated_at');const rw=(f.data||[]).find(x=>x.key===k);if(rw)dlJson('cadangan_cloud_'+k,rw.value)}catch(e){}
-      cvSet(ck,row.updated_at);return true;
-    }
-    dlJson('cadangan_perangkat_'+k,k==='items'?items:LOGO);
-    cvSet(ck,row.updated_at);setDirty(k,false);
-    try{localStorage.removeItem(k==='items'?KEY:LK)}catch(e){}
-    location.reload();return false;
-  }catch(e){return true}
-}
 async function push(k){
   if(!sb||!suid)return false;
   if(BUSY[k]){BUSY[k]=2;return false}
   BUSY[k]=1;const v=VER[k];let ok=false;
   try{
-    if(!(await guard(k)))return false;
     if(k==='items')await relocate();
     const val=await toCloud(k==='items'?items:LOGO);
-    const ts=new Date().toISOString();
-    const r=await sb.from('app_state').upsert({user_id:suid,key:k,value:val,updated_at:ts},{onConflict:'user_id,key'});
+    const r=await sb.from('app_state').upsert({user_id:suid,key:k,value:val,updated_at:new Date().toISOString()},{onConflict:'user_id,key'});
     if(r.error)throw r.error;
     if(VER[k]===v)setDirty(k,false);
-    try{const q=await sb.from('app_state').select('key,updated_at'),w=(q.data||[]).find(x=>x.key===k);cvSet(suid+':'+k,w?w.updated_at:ts)}catch(e){cvSet(suid+':'+k,ts)}
     synOk();ok=true;
     if(k==='items'){try{items.forEach(it=>walkCtx(it,(du,p,key)=>{if(key==='qr')return;const r=UPF.get(dirOf(it,p)+'|'+du);if(r)p[key]=r}))}catch(e){}}
     if(RELO_ERR){setSyn('Tersimpan, tetapi file gagal dipindah ('+RELO_ERR+')',true);RELO_ERR=''}
@@ -552,13 +525,13 @@ async function hydrateQr(){
   hold.forEach(l=>{const du=RD.get(l.qr);if(du)l.qr=du});
 }
 async function pull(){
-  const r=await sb.from('app_state').select('key,value,updated_at');
+  const r=await sb.from('app_state').select('key,value');
   if(r.error)throw r.error;
-  const m={},mt={};(r.data||[]).forEach(x=>{m[x.key]=x.value;mt[x.key]=x.updated_at});
+  const m={};(r.data||[]).forEach(x=>m[x.key]=x.value);
   const d=getDirty();
-  if(m.items!==undefined&&!d.includes('items')){items=Array.isArray(m.items)?m.items:[];cvSet(suid+':items',mt.items);try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
+  if(m.items!==undefined&&!d.includes('items')){items=Array.isArray(m.items)?m.items:[];try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
   else if(items.length||d.includes('items')){await push('items')}
-  if(m.logo!==undefined&&!d.includes('logo')){LOGO={src:'',l:25,t:25,w:50,o:.35,lock:false};Object.assign(LOGO,m.logo);cvSet(suid+':logo',mt.logo);try{localStorage.setItem(LK,JSON.stringify(LOGO))}catch(e){}}
+  if(m.logo!==undefined&&!d.includes('logo')){LOGO={src:'',l:25,t:25,w:50,o:.35,lock:false};Object.assign(LOGO,m.logo);try{localStorage.setItem(LK,JSON.stringify(LOGO))}catch(e){}}
   else if(LOGO.src||LOGO.co||d.includes('logo')){await push('logo')}
   if(any(LOGO,isRef)){setSyn('Memuat logo…');try{await hydrate(LOGO)}catch(e){walk(LOGO,v=>isRef(v)?'':undefined);try{localStorage.setItem(LK,JSON.stringify(LOGO))}catch(e2){}await push('logo')}}
   try{await hydrateQr()}catch(e){}
@@ -639,7 +612,7 @@ function initCloud(){
   $('lout').onclick=async ev=>{ev.preventDefault();if(getDirty().length&&cloudReady)await Promise.all(getDirty().map(push));await sb.auth.signOut();cloudReady=false;sync()};
   $('syn').style.cursor='pointer';$('syn').onclick=()=>sync();
   window.addEventListener('online',sync);
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&cloudReady)getDirty().forEach(k=>{clearTimeout(TM[k]);push(k)});else if(document.visibilityState==='visible'&&cloudReady)getDirty().forEach(k=>push(k))});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&cloudReady)getDirty().forEach(k=>{clearTimeout(TM[k]);push(k)})});
   sync();
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
