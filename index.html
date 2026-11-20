@@ -77,6 +77,8 @@ tr[data-r]{cursor:pointer}
 .un{font-size:14px}
 .fnm{font-size:12px;color:var(--mu);word-break:break-all}
 mark.hl{background:#ffe600;color:#000;padding:0 1px;border-radius:2px}
+.dz{border:1px dashed var(--bd);border-radius:8px;padding:6px 8px;min-width:130px}
+.dz.dzo{border-color:var(--ac);background:rgba(15,123,95,.12)}
 .fc{white-space:nowrap}
 a,a:visited{color:var(--ac)}
 .fc a,.fl{color:var(--ac);cursor:pointer;font-size:13px;text-decoration:underline;margin-right:6px}
@@ -649,7 +651,7 @@ const selP=new Set(),cuMsg={};
 function coaOf(i){return docsOf(i).find(z=>z.n==='COA')}
 function coaCell(i){
   const x=coaOf(i);if(!x)return '-';
-  return '<div class="row" style="margin:0;gap:10px;align-items:center;line-height:1.2"><label class="fl" style="margin:0;display:inline">'+(x.fd?'Ganti':'Unggah')+'<input type="file" accept="application/pdf,.pdf,image/*" data-cup="'+i.id+'" hidden></label>'+(x.fd?'<a href="#" class="fl" style="margin:0" data-cv="'+i.id+'">Lihat</a><a href="#" class="fl" style="margin:0;color:var(--dg)" data-cx="'+i.id+'">hapus</a>':'')+'</div>'
+  return '<div class="dz" data-coad="'+i.id+'"><div class="row" style="margin:0;gap:10px;align-items:center;line-height:1.2"><label class="fl" style="margin:0;display:inline">'+(x.fd?'Ganti':'Unggah')+'<input type="file" accept="application/pdf,.pdf,image/*" data-cup="'+i.id+'" hidden></label>'+(x.fd?'<a href="#" class="fl" style="margin:0" data-cv="'+i.id+'">Lihat</a><a href="#" class="fl" style="margin:0;color:var(--dg)" data-cx="'+i.id+'">hapus</a>':'')+'</div><div class="fnm" style="margin-top:2px">atau tarik file ke sini</div></div>'
    +(cuMsg[i.id]?'<div class="fnm">'+esc(cuMsg[i.id])+'</div>':'');
 }
 function expCell(i){
@@ -659,12 +661,14 @@ function expCell(i){
   const red=new Date()>=d;
   return '<td'+(red?' style="color:#e03131;font-weight:600" title="Kurang dari 1 bulan lagi / sudah lewat"':'')+'>'+fmtD(e)+'</td>';
 }
-function coaUp(t){
-  const id=t.dataset.cup,it=items.find(i=>i.id===id),f=t.files[0];if(!it||!f)return;
+function coaUp(t){coaUpF(t.dataset.cup,t.files[0],t)}
+function coaUpF(id,f,t){
+  const it=items.find(i=>i.id===id);if(!it||!f)return;
   const x=coaOf(it);if(!x)return;
+  const clr=()=>{if(t)t.value=''};
   const isPdf=f.type==='application/pdf'||/\.pdf$/i.test(f.name);
-  if(!(isPdf||/^image\//.test(f.type))){alert('File harus PDF atau gambar.');t.value='';return}
-  if(f.size>10485760){alert('File lebih dari 10 MB. Perkecil dulu filenya.');t.value='';return}
+  if(!(isPdf||/^image\//.test(f.type))){alert('File harus PDF atau gambar.');clr();return}
+  if(f.size>10485760){alert('File lebih dari 10 MB. Perkecil dulu filenya.');clr();return}
   const r=new FileReader();r.onload=()=>{
     x.fn=f.name;x.fd=isPdf?r.result.replace(/^data:[^;,]*/,'data:application/pdf'):r.result;
     x.c='g';x.s=2;
@@ -721,7 +725,7 @@ function openP(){fillDl();['p7p','p7a','p7c','p7d1','p7d2'].forEach(i=>$(i).valu
 function closeP(){$('mo7').style.display='none'}
 $('p7add').onclick=()=>{p7addB();const l=$('p7b').lastElementChild;l.scrollIntoView({block:'nearest'});l.querySelector('[data-f=nama]').focus()};
 $('p7x').onclick=closeP;
-$('mo7').onclick=e=>{if(e.target.id==='mo7')closeP();const kp=e.target.closest('[data-p7km]');if(kp){const w=kp.closest('.p7kw');w.insertAdjacentHTML('beforeend',p7km(false));w.lastElementChild.querySelector('input').focus();return}const kx=e.target.closest('[data-p7kx]');if(kx){kx.closest('.km').remove();return}const r=e.target.closest('[data-p7r]');if(r){r.closest('.p7i').remove();p7num()}};
+$('mo7').onclick=e=>{const kp=e.target.closest('[data-p7km]');if(kp){const w=kp.closest('.p7kw');w.insertAdjacentHTML('beforeend',p7km(false));w.lastElementChild.querySelector('input').focus();return}const kx=e.target.closest('[data-p7kx]');if(kx){kx.closest('.km').remove();return}const r=e.target.closest('[data-p7r]');if(r){r.closest('.p7i').remove();p7num()}};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeP()});
 const p7fill=e=>{const t=e.target;if(e.type!=='change'&&e.inputType&&e.inputType!=='insertReplacementText')return;
   if(t.id==='p7p'){const v=t.value.trim().toLowerCase(),f=v&&items.find(i=>(i.prin||'').trim().toLowerCase()===v);if(f){if(!$('p7a').value.trim()&&f.aprin)$('p7a').value=f.aprin;if(!$('p7c').value.trim()&&f.pic)$('p7c').value=f.pic;if(!$('p7d1').value&&f.ptt)$('p7d1').value=f.ptt;if(!$('p7d2').value&&f.ptb)$('p7d2').value=f.ptb}}
@@ -735,7 +739,6 @@ $('p7s').onclick=()=>{
   items.unshift(...out);out.forEach(autoLOA);save();closeP();render();
 };
 $('batal').onclick=closeM;
-$('mo').onclick=e=>{if(e.target.id==='mo')closeM()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
 $('simpan').onclick=()=>{
   const v={};MF.forEach(k=>v[k]=$(k).value.trim());v.abv=v.abv.replace(',','.');
@@ -819,7 +822,7 @@ function labOpen(init){
   let m=document.getElementById('molab');
   if(!m){m=document.createElement('div');m.id='molab';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;overflow:auto;padding:16px';
     m.onclick=e=>{const t=e.target,d=t.dataset;
-      if(t===m||d.lxx!==undefined)m.style.display='none';
+      if(d.lxx!==undefined)m.style.display='none';
       else if(d.lxd!==undefined)labDownload(t);
       else if(d.lxp!==undefined){const w=window.open('','_blank');if(w){w.document.write('<title>Uji Lab Produk</title><style>@page{size:A4 landscape;margin:0}html,body{margin:0;padding:0}body{padding:10mm 8mm}</style>'+labHTML(false));w.document.close();setTimeout(()=>w.print(),400)}}};
     m.onchange=e=>{const t=e.target,d=t.dataset;
@@ -844,6 +847,15 @@ $('prs').onclick=()=>{
   save();render();
 };
 $('tb').onchange=e=>{if(e.target.dataset.cup){coaUp(e.target);return}const id=e.target.dataset.sel;if(!id)return;if(e.target.checked)selP.add(id);else selP.delete(id);render()};
+$('tb').addEventListener('dragover',e=>{const z=e.target.closest&&e.target.closest('[data-coad]');if(!z)return;e.preventDefault();z.classList.add('dzo')});
+$('tb').addEventListener('dragleave',e=>{const z=e.target.closest&&e.target.closest('[data-coad]');if(z&&!z.contains(e.relatedTarget))z.classList.remove('dzo')});
+$('tb').addEventListener('drop',e=>{
+  const z=e.target.closest&&e.target.closest('[data-coad]');if(!z)return;
+  e.preventDefault();z.classList.remove('dzo');
+  const fs=e.dataTransfer&&e.dataTransfer.files;if(!fs||!fs.length)return;
+  if(fs.length>1)alert('Hanya satu file COA per barang. File pertama yang dipakai.');
+  coaUpF(z.dataset.coad,fs[0],null);
+});
 $('selall').onchange=e=>{
   vis().forEach(i=>{if(e.target.checked)selP.add(i.id);else selP.delete(i.id)});
   render();
@@ -1509,7 +1521,6 @@ $('pm6').onclick=dlML6;
 function mlOfReg(it){const pick=a=>a&&a.find(z=>z.n===RML),x=pick(it.rev&&it.rev.docs)||pick(docsOf(it));const m=mlFix(it,Object.assign(mlDef(it),(x&&x.ml)||{})),L=(it.nie&&it.nie.lab)||{};['nm','sn','ib','nb','dp','di','kp'].forEach(k=>{if(L[k])m[k]=L[k]});if(L.al)m.alk=L.al;if(it.lg&&x&&x.ml)Object.assign(m,x.ml);if(x&&x.ml&&DIOV(x.ml))m.di=x.ml.di;else if(DIN())m.di=DIN();return m}
 function closeM5(){$('mo5').style.display='none';$('m5_b').innerHTML=''}
 $('m5_close').onclick=closeM5;
-$('mo5').onclick=e=>{if(e.target.id==='mo5')closeM5()};
 document.addEventListener('click',e=>{if(actOpen&&!e.target.closest('[data-actwrap]')){actOpen=null;document.querySelectorAll('.amenu').forEach(m=>m.remove())}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('mo5').style.display!=='none')closeM5()});
 const PLB={nama:'Nama Barang',njenis:'Nama Jenis',kemasan:'Kemasan',abv:'Kadar Alkohol (%)'};
@@ -1602,7 +1613,7 @@ function exOpen(){
   let m=document.getElementById('mo6');
   if(!m){m=document.createElement('div');m.id='mo6';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;overflow:auto;padding:16px';
     m.onclick=e=>{const t=e.target,d=t.dataset;
-      if(t===m||d.exx!==undefined)m.style.display='none';
+      if(d.exx!==undefined)m.style.display='none';
       else if(d.exp!==undefined){const w=window.open('','_blank');if(w){w.document.write('<title>Payment Request</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}body{padding:10mm 8mm}</style>'+exHTML(false));w.document.close();setTimeout(()=>w.print(),400)}}};
     m.onchange=e=>{const t=e.target,d=t.dataset;
       if(d.ec){const k=d.ec,v=t.value;if(/^[tn]\d$/.test(k))exCfg[k[0]][+k[1]]=v;else exCfg[k]=v.trim();exSave();exOpen();return}
@@ -1770,7 +1781,6 @@ $('loe_save').onclick=()=>{
   closeLOE();render2();
 };
 $('loe_cancel').onclick=closeLOE;
-$('mo_loe').onclick=e=>{if(e.target.id==='mo_loe')closeLOE()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLOE()});
 let eId=null,eAuto='';
 function eKeys(){const p=$('e_t').value==='Principal';return p?['prin','aprin']:['pab','apab']}
@@ -1868,7 +1878,6 @@ $('e_clear').onclick=()=>{
   closeE();render2();
 };
 $('e_cancel').onclick=closeE;
-$('mo2').onclick=e=>{if(e.target.id==='mo2')closeE()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeE()});
 $('tbp').onchange=e=>{
   const d=e.target.dataset,v=e.target.value;
@@ -1929,7 +1938,6 @@ $('c_clear').onclick=()=>{
   closeCOA();render2();
 };
 $('c_cancel').onclick=closeCOA;
-$('mo_coa').onclick=e=>{if(e.target.id==='mo_coa')closeCOA()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCOA()});
 function nameAttr(x){
   if(EDN.includes(x.n))return ' ed" data-ed="'+x.id+'" title="Klik untuk mengisi Principal / Pabrik';
@@ -2243,7 +2251,6 @@ $('ml_form').addEventListener('input',mlUpd);
 $('ml_save').onclick=()=>{const it=curIt(),x=it&&it.docs.find(z=>z.id===mlId);if(x){const m=mlRead();m.alk=m.alk.replace(',','.');x.ml=m;if(revMode&&revId){const r=items.find(z=>z.id===revId);if(r){const sp=String(m.sn||'').split(/\s+-\s+/),jn=sp.length>1?sp.shift():'';if(m.nm)r.nama=m.nm;if(m.sn){r.jenis=jn;r.njenis=sp.join(' - ')}if(m.alk)r.abv=m.alk;if(m.ib)r.kemasan=m.ib;r.rev=r.rev||{};r.rev.mod=true}}if(it.perub)x.mlSaved=1;x.s=mlComplete(m)?2:1;if(x.s===2){x.c='g';fillKompLk(it,x)}save()}closeML()};
 $('ml_clear').onclick=()=>{const it=curIt(),x=it&&it.docs.find(z=>z.id===mlId);if(x){delete x.ml;delete x.mlSaved;x.s=0;if(x.c==='g')delete x.c;save()}closeML()};
 $('ml_cancel').onclick=closeML;
-$('mo3').onclick=e=>{if(e.target.id==='mo3')closeML()};
 
 const LK='bpom_logo_v1';
 let LOGO={src:'',l:25,t:25,w:50,o:.35,lock:false};
@@ -2495,7 +2502,6 @@ $('lb_sv').onclick=async()=>{
 $('lb_zo').onclick=()=>lbZ(lbZoom-.25);$('lb_zi').onclick=()=>lbZ(lbZoom+.25);$('lb_zv').onclick=()=>lbZ(1);
 $('lb_close').onclick=closeLB;
 window.addEventListener('resize',()=>{if(lbId&&$('mo4').style.display!=='none')lbDrawSync()});
-$('mo4').onclick=e=>{if(e.target.id==='mo4')closeLB()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('mo3').style.display!=='none')closeML();else if($('mo4').style.display!=='none')closeLB()}});
 
 function CO(){return LOGO.co||{}}
